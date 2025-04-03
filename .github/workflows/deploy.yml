@@ -7,6 +7,11 @@ on:
     
     workflow_dispatch:
 
+permissions:
+    contents: read
+    pages: write
+    id-token: write
+
 # Don't try to deploy more than once at the same time
 concurrency:
     group: "pages"
