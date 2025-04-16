@@ -1,0 +1,18 @@
+@import "tailwindcss";
+@import "tailwindcss/preflight";
+@tailwind utilities;
+
+@font-face {
+    font-family: Mode7-0;
+    src: url(/fonts/MODE7GX0.TTF);
+}
+
+body {
+    background-color: black;
+    padding: 40px;
+}
+
+p {
+    font-family: Mode7-0;
+    color: white;
+}
