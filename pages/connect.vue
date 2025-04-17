@@ -1,7 +1,9 @@
 <script setup>
 import { useTemplateRef } from "vue";
 
+// The prefix for messages coming from the bridge and not Genesis
 const bridge_msg_prefix = "[bridge] ";
+// The address of the bridge (https://github.com/prestel-uk/web-bridge) to connect to
 const bridge_addr = "ws://127.0.0.1:1234";
 
 const output = useTemplateRef("output");
@@ -11,6 +13,7 @@ let connected = false;
 let ws;
 
 function parseResponse(response) {
+  // Don't try to parse messages from the bridge
   if (response.startsWith(bridge_msg_prefix)) {
     console.log(response);
     return "";
@@ -19,6 +22,7 @@ function parseResponse(response) {
   let json = JSON.parse(response);
   let result = "";
   for (const i in json) {
+    // The response is received as a JSON array of numbers which need to be converted to a string first
     result += String.fromCharCode(json[i]);
   }
   return result;
