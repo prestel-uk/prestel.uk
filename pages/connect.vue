@@ -1,13 +1,21 @@
 <script setup>
 import { useTemplateRef } from "vue";
 
+const bridge_msg_prefix = "[bridge] ";
+const bridge_addr = "ws://127.0.0.1:1234";
+
 const output = useTemplateRef("output");
 const toggleConnectedButton = useTemplateRef("toggleConnectedButton");
 
 let connected = false;
 let ws;
 
-function responseToString(response) {
+function parseResponse(response) {
+  if (response.startsWith(bridge_msg_prefix)) {
+    console.log(response);
+    return "";
+  }
+
   let json = JSON.parse(response);
   let result = "";
   for (const i in json) {
@@ -17,13 +25,13 @@ function responseToString(response) {
 }
 
 function connect() {
-  ws = new WebSocket("ws://127.0.0.1:1234");
+  ws = new WebSocket(bridge_addr);
   ws.onopen = () => {
     toggleConnectedButton.value.innerText = "Disconnect";
   }
   ws.onmessage = (event) => {
     console.log(event.data);
-    output.value.innerText = responseToString(event.data);
+    output.value.innerText = parseResponse(event.data);
   }
   connected = true;
 }
@@ -42,6 +50,14 @@ function toggleConnected() {
     connect();
   }
 }
+
+onMounted(() => {
+  window.addEventListener("keydown", (event) => {
+    if (connected) {
+      ws.send(event.key);
+    }
+  });
+});
 </script>
 
 <template>
