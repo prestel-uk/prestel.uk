@@ -22,8 +22,9 @@ function parseResponse(response) {
   let json = JSON.parse(response);
   let result = "";
   for (const i in json) {
-    // The response is received as a JSON array of numbers which need to be converted to a string first
-    result += String.fromCharCode(json[i]);
+    // The response is received as a JSON array of character codes as numbers which need to have the parity bit removed, then converted into a string
+    const withoutParity = json[i] & 0b01111111;
+    result += String.fromCharCode(withoutParity);
   }
   return result;
 }
