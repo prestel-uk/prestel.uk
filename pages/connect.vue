@@ -1,5 +1,18 @@
 <script setup>
+import "~/assets/css/terminal.css";
 import { useTemplateRef } from "vue";
+
+// Control codes
+const controlCodes = {
+  "ESCAPE": { className: "", char: 0x1B },
+  "ALPHANUMERIC_RED": { className: "red", char: 0x41 },
+  "ALPHANUMERIC_GREEN": { className: "green", char: 0x42 },
+  "ALPHANUMERIC_YELLOW": { className: "yellow", char: 0x43 },
+  "ALPHANUMERIC_BLUE": { className: "blue", char: 0x44 },
+  "ALPHANUMERIC_MAGENTA": { className: "magenta", char: 0x45 },
+  "ALPHANUMERIC_CYAN": { className: "cyan", char: 0x46 },
+  "ALPHANUMERIC_WHITE": { className: "white", char: 0x47 },
+};
 
 // The prefix for messages coming from the bridge and not Genesis
 const bridge_msg_prefix = "[bridge] ";
@@ -11,6 +24,17 @@ const toggleConnectedButton = useTemplateRef("toggleConnectedButton");
 
 let connected = false;
 let ws;
+let currentColour = controlCodes.ALPHANUMERIC_WHITE;
+
+// Find a control code by its char code, returns the key of the code in `controlCodes` if it was found, otherwise returns null
+function findCodeByCharCode(charCode) {
+  for (const [key, value] of Object.entries(controlCodes)) {
+    if (value.char === charCode) {
+      return key;
+    }
+  }
+  return null;
+}
 
 function parseResponse(response) {
   // Don't try to parse messages from the bridge
@@ -20,9 +44,28 @@ function parseResponse(response) {
   }
 
   let json = JSON.parse(response);
+  let nextIsControlCode = false;
   for (const i in json) {
     // The response is received as a JSON array of character codes as numbers which need to have the parity bit removed, then converted into a string
     const withoutParity = json[i] & 0b01111111;
+
+    // Don't try to display escape/control codes
+    if (withoutParity === controlCodes.ESCAPE.char) {
+      console.log("found escape code");
+      nextIsControlCode = true;
+      continue;
+    } else if (nextIsControlCode) {
+      nextIsControlCode = false;
+      // Add the correct class to the next elements
+      const code = controlCodes[findCodeByCharCode(json[i])]
+      if (code) {
+        currentColour = code;
+      } else {
+        console.error("Found unknown escape code: 0x" + json[i].toString(16));
+      }
+      continue;
+    }
+
     // Create a new <span> element with a unique id so that it can be referenced later, and set the content to the character. If a span already exists for that character, use that instead.
     let charSpan = document.getElementById("char" + i);
     if (!charSpan) {
@@ -30,8 +73,15 @@ function parseResponse(response) {
     }
 
     charSpan.id = "char" + i;
-    charSpan.innerText = String.fromCharCode(withoutParity);
+    charSpan.classList.add(currentColour.className);
+    const charAsString = String.fromCharCode(withoutParity);
+    charSpan.innerText = charAsString;
     outputContainer.value.appendChild(charSpan);
+
+    // Reset colours at the end of a line
+    if (charAsString === "\n") {
+      currentColour = controlCodes.ALPHANUMERIC_WHITE;
+    }
   }
 }
 
