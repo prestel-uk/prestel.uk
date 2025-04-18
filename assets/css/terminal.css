@@ -25,3 +25,9 @@
 .alphanumeric-white {
     color: #ffffff;
 }
+
+.double-height {
+    display: inline-block;
+    transform-origin: top;
+    transform: scale(1, 2);
+}

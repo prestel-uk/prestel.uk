@@ -5,26 +5,26 @@ import { useTemplateRef } from "vue";
 // Control codes
 const controlCodes = {
   "ESCAPE": { char: 0x1B },
-  "ALPHANUMERIC_RED": { className: "alphanumeric-red", char: 0x41 },
-  "ALPHANUMERIC_GREEN": { className: "alphanumeric-green", char: 0x42 },
-  "ALPHANUMERIC_YELLOW": { className: "alphanumeric-yellow", char: 0x43 },
-  "ALPHANUMERIC_BLUE": { className: "alphanumeric-blue", char: 0x44 },
-  "ALPHANUMERIC_MAGENTA": { className: "alphanumeric-magenta", char: 0x45 },
-  "ALPHANUMERIC_CYAN": { className: "alphanumeric-cyan", char: 0x46 },
-  "ALPHANUMERIC_WHITE": { className: "alphanumeric-white", char: 0x47 },
+  "ALPHANUMERIC_RED": { className: "alphanumeric-red", char: 0x41, type: "colour" },
+  "ALPHANUMERIC_GREEN": { className: "alphanumeric-green", char: 0x42, type: "colour" },
+  "ALPHANUMERIC_YELLOW": { className: "alphanumeric-yellow", char: 0x43, type: "colour" },
+  "ALPHANUMERIC_BLUE": { className: "alphanumeric-blue", char: 0x44, type: "colour" },
+  "ALPHANUMERIC_MAGENTA": { className: "alphanumeric-magenta", char: 0x45, type: "colour" },
+  "ALPHANUMERIC_CYAN": { className: "alphanumeric-cyan", char: 0x46, type: "colour" },
+  "ALPHANUMERIC_WHITE": { className: "alphanumeric-white", char: 0x47, type: "colour" },
   "FLASHING": { className: "flashing", char: 0x48 },
   "STEADY": { className: "steady", char: 0x49 },
   "END_EDIT": { char: 0x4A },
   "START_EDIT": { char: 0x4B },
-  "NORMAL_HEIGHT": { char: 0x4C },
-  "DOUBLE_HEIGHT": { className: "double-height", char: 0x4D },
-  "MOSAICS_RED": { className: "mosaics-red", char: 0x51 },
-  "MOSAICS_GREEN": { className: "mosaics-green", char: 0x52 },
-  "MOSAICS_YELLOW": { className: "mosaics-yellow", char: 0x53 },
-  "MOSAICS_BLUE": { className: "mosaics-blue", char: 0x54 },
-  "MOSAICS_MAGENTA": { className: "mosaics-magenta", char: 0x55 },
-  "MOSAICS_CYAN": { className: "mosaics-cyan", char: 0x56 },
-  "MOSAICS_WHITE": { className: "mosaics-white", char: 0x57 },
+  "NORMAL_HEIGHT": { className: "normal-height", char: 0x4C, type: "height" },
+  "DOUBLE_HEIGHT": { className: "double-height", char: 0x4D, type: "height" },
+  "MOSAICS_RED": { className: "mosaics-red", char: 0x51, type: "colour" },
+  "MOSAICS_GREEN": { className: "mosaics-green", char: 0x52, type: "colour" },
+  "MOSAICS_YELLOW": { className: "mosaics-yellow", char: 0x53, type: "colour" },
+  "MOSAICS_BLUE": { className: "mosaics-blue", char: 0x54, type: "colour" },
+  "MOSAICS_MAGENTA": { className: "mosaics-magenta", char: 0x55, type: "colour" },
+  "MOSAICS_CYAN": { className: "mosaics-cyan", char: 0x56, type: "colour" },
+  "MOSAICS_WHITE": { className: "mosaics-white", char: 0x57, type: "colour" },
   "CONCEAL_DISPLAY": { char: 0x58 },
   "CONTIGUOUS_MOSAICS": { className: "contiguous-mosaics", char: 0x59 },
   "SEPARATED_MOSAICS": { className: "separated-mosaics", char: 0x5A },
@@ -44,7 +44,9 @@ const toggleConnectedButton = useTemplateRef("toggleConnectedButton");
 
 let connected = false;
 let ws;
+
 let currentColour = controlCodes.ALPHANUMERIC_WHITE;
+let heightMode = controlCodes.NORMAL_HEIGHT;
 
 // Find a control code by its char code, returns the key of the code in `controlCodes` if it was found, otherwise returns null
 function findCodeByCharCode(charCode) {
@@ -76,10 +78,13 @@ function parseResponse(response) {
       continue;
     } else if (nextIsControlCode) {
       nextIsControlCode = false;
-      // Add the correct class to the next elements
+      // Add the correct classes to the next elements
       const code = controlCodes[findCodeByCharCode(json[i])]
       if (code) {
-        currentColour = code;
+        switch (code.type) {
+          case "colour": currentColour = code; break;
+          case "height": heightMode = code; break;
+        }
       } else {
         console.error("Found unknown escape code: 0x" + json[i].toString(16));
       }
@@ -93,14 +98,18 @@ function parseResponse(response) {
     }
 
     charSpan.id = "char" + i;
+
     charSpan.classList.add(currentColour.className);
+    charSpan.classList.add(heightMode.className);
+
     const charAsString = String.fromCharCode(withoutParity);
     charSpan.innerText = charAsString;
     outputContainer.value.appendChild(charSpan);
 
-    // Reset colours at the end of a line
+    // Reset formatting at the end of a line
     if (charAsString === "\n") {
       currentColour = controlCodes.ALPHANUMERIC_WHITE;
+      heightMode = controlCodes.NORMAL_HEIGHT;
     }
   }
 }
