@@ -1,27 +1,27 @@
-.red {
+.alphanumeric-red {
     color: #ff0000;
 }
 
-.green {
+.alphanumeric-green {
     color: #00ff00;
 }
 
-.yellow {
+.alphanumeric-yellow {
     color: #ffff00;
 }
 
-.blue {
+.alphanumeric-blue {
     color: #0000ff;
 }
 
-.magenta {
+.alphanumeric-magenta {
     color: #ff00ff;
 }
 
-.cyan {
+.alphanumeric-cyan {
     color: #00ffff;
 }
 
-.white {
+.alphanumeric-white {
     color: #ffffff;
 }
