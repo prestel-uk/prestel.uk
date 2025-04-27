@@ -190,7 +190,8 @@ function toggleConnected() {
 
 onMounted(() => {
   window.addEventListener("keydown", (event) => {
-    if (connected) {
+    // We have to check the length of the key, otherwise things like "Enter", and "Shift" get sent too
+    if (connected && event.key.length === 1) {
       ws.send(event.key);
     }
   });
