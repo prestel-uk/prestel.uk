@@ -130,6 +130,8 @@ function parseResponse(response) {
     // The response is received as a JSON array of character codes as numbers which need to have the parity bit removed, then converted into a string
     const withoutParity = json[i] & 0b01111111;
 
+    let charAsString;
+
     // Don't try to display escape/control codes
     if (withoutParity === controlCodes.ESCAPE.char) {
       console.log("found escape code");
@@ -149,7 +151,7 @@ function parseResponse(response) {
       } else {
         console.error("Found unknown escape code: 0x" + withoutParity.toString(16));
       }
-      continue;
+      charAsString = " ";
     }
 
     // Each character has its own <span> element which is created when the page loads
@@ -158,15 +160,16 @@ function parseResponse(response) {
     charSpan.dataset.textmode = textMode.name;
     charSpan.dataset.heightmode = heightMode.name;
 
-    let charAsString;
-    // If the current mode is mosaic, get the mosaic character instead of just converting to a string
-    if (textMode.type === "mosaic") {
-      charAsString = getMosaicChar(withoutParity);
-      if (!charAsString) {
-        console.error("getMosaicChar returned null\n Current textMode is: " + textMode.char.toString(16));
+    if (!charAsString) {
+      // If the current mode is mosaic, get the mosaic character instead of just converting to a string
+      if (textMode.type === "mosaic") {
+        charAsString = getMosaicChar(withoutParity);
+        if (!charAsString) {
+          console.error("getMosaicChar returned null\n Current textMode is: " + textMode.char.toString(16));
+        }
+      } else {
+        charAsString = String.fromCharCode(withoutParity);
       }
-    } else {
-      charAsString = String.fromCharCode(withoutParity);
     }
 
     charSpan.innerText = charAsString;
@@ -181,7 +184,7 @@ function parseResponse(response) {
     }
 
     // Update cursor position and wrap if needed
-    if (cursor[1] === COLUMNS - 1) {
+    if (cursor[1] === COLUMNS) {
       // Wrap the cursor position
       // Add one to the current row
       cursor[0]++;
