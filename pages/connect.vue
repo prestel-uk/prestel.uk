@@ -5,46 +5,49 @@ import { useTemplateRef } from "vue";
 // Control codes
 const controlCodes = {
   "ESCAPE": { char: 0x1B },
-  "ALPHANUMERIC_RED": { className: "red", char: 0x41, type: "text" },
-  "ALPHANUMERIC_GREEN": { className: "green", char: 0x42, type: "text" },
-  "ALPHANUMERIC_YELLOW": { className: "yellow", char: 0x43, type: "text" },
-  "ALPHANUMERIC_BLUE": { className: "blue", char: 0x44, type: "text" },
-  "ALPHANUMERIC_MAGENTA": { className: "magenta", char: 0x45, type: "text" },
-  "ALPHANUMERIC_CYAN": { className: "cyan", char: 0x46, type: "text" },
-  "ALPHANUMERIC_WHITE": { className: "white", char: 0x47, type: "text" },
-  "FLASHING": { className: "flashing", char: 0x48 },
-  "STEADY": { className: "steady", char: 0x49 },
+  "ALPHANUMERIC_RED": { name: "alphanumeric-red", char: 0x41, type: "text" },
+  "ALPHANUMERIC_GREEN": { name: "alphanumeric-green", char: 0x42, type: "text" },
+  "ALPHANUMERIC_YELLOW": { name: "alphanumeric-yellow", char: 0x43, type: "text" },
+  "ALPHANUMERIC_BLUE": { name: "alphanumeric-blue", char: 0x44, type: "text" },
+  "ALPHANUMERIC_MAGENTA": { name: "alphanumeric-magenta", char: 0x45, type: "text" },
+  "ALPHANUMERIC_CYAN": { name: "alphanumeric-cyan", char: 0x46, type: "text" },
+  "ALPHANUMERIC_WHITE": { name: "alphanumeric-white", char: 0x47, type: "text" },
+  "FLASHING": { name: "flashing", char: 0x48 },
+  "STEADY": { name: "steady", char: 0x49 },
   "END_EDIT": { char: 0x4A },
   "START_EDIT": { char: 0x4B },
-  "NORMAL_HEIGHT": { className: "normal-height", char: 0x4C, type: "height" },
-  "DOUBLE_HEIGHT": { className: "double-height", char: 0x4D, type: "height" },
-  "MOSAICS_RED": { className: "red", char: 0x51, type: "mosaic" },
-  "MOSAICS_GREEN": { className: "green", char: 0x52, type: "mosaic" },
-  "MOSAICS_YELLOW": { className: "yellow", char: 0x53, type: "mosaic" },
-  "MOSAICS_BLUE": { className: "blue", char: 0x54, type: "mosaic" },
-  "MOSAICS_MAGENTA": { className: "magenta", char: 0x55, type: "mosaic" },
-  "MOSAICS_CYAN": { className: "cyan", char: 0x56, type: "mosaic" },
-  "MOSAICS_WHITE": { className: "white", char: 0x57, type: "mosaic" },
+  "NORMAL_HEIGHT": { name: "normal-height", char: 0x4C, type: "height" },
+  "DOUBLE_HEIGHT": { name: "double-height", char: 0x4D, type: "height" },
+  "MOSAICS_RED": { name: "mosaics-red", char: 0x51, type: "mosaic" },
+  "MOSAICS_GREEN": { name: "mosaics-green", char: 0x52, type: "mosaic" },
+  "MOSAICS_YELLOW": { name: "mosaics-yellow", char: 0x53, type: "mosaic" },
+  "MOSAICS_BLUE": { name: "mosaics-blue", char: 0x54, type: "mosaic" },
+  "MOSAICS_MAGENTA": { name: "mosaics-magenta", char: 0x55, type: "mosaic" },
+  "MOSAICS_CYAN": { name: "mosaics-cyan", char: 0x56, type: "mosaic" },
+  "MOSAICS_WHITE": { name: "mosaics-white", char: 0x57, type: "mosaic" },
   "CONCEAL_DISPLAY": { char: 0x58 },
-  "CONTIGUOUS_MOSAICS": { className: "contiguous-mosaics", char: 0x59, type: "mosaicsMode" },
-  "SEPARATED_MOSAICS": { className: "separated-mosaics", char: 0x5A, type: "mosaicsMode" },
-  "BLACK_BACKGROUND": { className: "black-background", char: 0x5C },
-  "NEW_BACKGROUND": { className: "new-background", char: 0x5D },
+  "CONTIGUOUS_MOSAICS": { name: "contiguous-mosaics", char: 0x59, type: "mosaicsMode" },
+  "SEPARATED_MOSAICS": { name: "separated-mosaics", char: 0x5A, type: "mosaicsMode" },
+  "BLACK_BACKGROUND": { name: "black-background", char: 0x5C },
+  "NEW_BACKGROUND": { name: "new-background", char: 0x5D },
   "HOLD_MOSAICS": { char: 0x5E },
   "RELEASE_MOSAICS": { char: 0x5F },
 };
 
 // The offset of contiguous mosaics in the font
-const contiguousMosaicsOffset = 57856;
+const CONTIGUOUS_MOSAICS_OFFSET = 57856;
 // The offset of separated mosaics in the font
-const separatedMosaicsOffset = 58048;
+const SEPARATED_MOSAICS_OFFSET = 58048;
 
 // The prefix for messages coming from the bridge and not Genesis
-const bridge_msg_prefix = "[bridge] ";
+const BRIDGE_MSG_PREFIX = "[bridge] ";
 // The address of the bridge (https://github.com/prestel-uk/web-bridge) to connect to
-const bridge_addr = "ws://127.0.0.1:1234";
+const BRIDGE_ADDR = "ws://127.0.0.1:1234";
 
-const outputContainer = useTemplateRef("outputContainer");
+const ROWS = 24;
+const COLUMNS = 40;
+
+const outputGrid = useTemplateRef("outputGrid");
 const toggleConnectedButton = useTemplateRef("toggleConnectedButton");
 
 let connected = false;
@@ -53,6 +56,33 @@ let ws;
 let textMode = controlCodes.ALPHANUMERIC_WHITE;
 let heightMode = controlCodes.NORMAL_HEIGHT;
 let mosaicsMode = controlCodes.CONTIGUOUS_MOSAICS;
+
+// Converts a row and column to an index
+function rowAndColumnToIndex(row, col) {
+  return row * COLUMNS + col;
+}
+
+// Converts an index to a row and column
+function indexToRowAndColumn(index) {
+  const row = Math.floor(index / COLUMNS);
+  const col = index % COLUMNS;
+
+  return [row, col];
+}
+
+// Gets the row and column of an element in the terminal grid
+function getElementPosition(el) {
+  const index = el.id.split("char")[1];
+
+  return indexToRowAndColumn(index);
+}
+
+// Clear the terminal
+function clearTerminal() {
+  for (const el of outputGrid.value.children) {
+    el.textContent = "";
+  }
+}
 
 // Find a control code by its char code, returns the key of the code in `controlCodes` if it was found, otherwise returns null
 function findCodeByCharCode(charCode) {
@@ -77,9 +107,9 @@ function getMosaicChar(code) {
   const maskedCode = code & 0b01011111;
   switch (mosaicsMode) {
     case controlCodes.CONTIGUOUS_MOSAICS:
-      return String.fromCodePoint(maskedCode + contiguousMosaicsOffset);
+      return String.fromCodePoint(maskedCode + CONTIGUOUS_MOSAICS_OFFSET);
     case controlCodes.SEPARATED_MOSAICS:
-      return String.fromCodePoint(maskedCode + separatedMosaicsOffset);
+      return String.fromCodePoint(maskedCode + SEPARATED_MOSAICS_OFFSET);
     default:
       return null;
   }
@@ -87,15 +117,15 @@ function getMosaicChar(code) {
 
 function parseResponse(response) {
   // Don't try to parse messages from the bridge
-  if (response.startsWith(bridge_msg_prefix)) {
+  if (response.startsWith(BRIDGE_MSG_PREFIX)) {
     console.log(response);
     return "";
   }
 
   let json = JSON.parse(response);
   let nextIsControlCode = false;
-  // How many chars until a new line, so when this is 1, the next character should be a new line
-  let charsUntilNewLine = 40;
+  // The current row and column of the "cursor"
+  let cursor = [0, 0];
   for (const i in json) {
     // The response is received as a JSON array of character codes as numbers which need to have the parity bit removed, then converted into a string
     const withoutParity = json[i] & 0b01111111;
@@ -122,16 +152,11 @@ function parseResponse(response) {
       continue;
     }
 
-    // Create a new <span> element with a unique id so that it can be referenced later, and set the content to the character. If a span already exists for that character, use that instead.
-    let charSpan = document.getElementById("char" + i);
-    if (!charSpan) {
-      charSpan = document.createElement("span");
-    }
+    // Each character has its own <span> element which is created when the page loads
+    let charSpan = document.getElementById("char" + rowAndColumnToIndex(cursor[0], cursor[1]));
 
-    charSpan.id = "char" + i;
-
-    charSpan.classList.add(textMode.className);
-    charSpan.classList.add(heightMode.className);
+    charSpan.dataset.textmode = textMode.name;
+    charSpan.dataset.heightmode = heightMode.name;
 
     let charAsString;
     // If the current mode is mosaic, get the mosaic character instead of just converting to a string
@@ -145,24 +170,34 @@ function parseResponse(response) {
     }
 
     charSpan.innerText = charAsString;
-    outputContainer.value.appendChild(charSpan);
 
     // Reset formatting at the end of a line
     if (charAsString === "\n") {
       onNewLine();
-      charsUntilNewLine = 40;
-    } else if (charsUntilNewLine === 0) {
+      // Add one to the current row
+      cursor[0]++;
+      // Set the column to 0
+      cursor[1] = 0;
+    }
+
+    // Update cursor position and wrap if needed
+    if (cursor[1] === COLUMNS - 1) {
+      // Wrap the cursor position
+      // Add one to the current row
+      cursor[0]++;
+      // Set the column to 0
+      cursor[1] = 0;
+
       onNewLine();
-      charSpan.innerText += "\n";
-      charsUntilNewLine = 40;
     } else {
-      charsUntilNewLine--;
+      // Add one to the current column
+      cursor[1]++;
     }
   }
 }
 
 function connect() {
-  ws = new WebSocket(bridge_addr);
+  ws = new WebSocket(BRIDGE_ADDR);
   ws.onopen = () => {
     toggleConnectedButton.value.innerText = "Disconnect";
   }
@@ -170,12 +205,13 @@ function connect() {
     console.log(event.data);
     parseResponse(event.data);
   }
+
   connected = true;
 }
 
 function disconnect() {
   ws.close();
-  outputContainer.value.innerHTML = "";
+  clearTerminal();
   toggleConnectedButton.value.innerText = "Connect";
   connected = false;
 }
@@ -195,12 +231,24 @@ onMounted(() => {
       ws.send(event.key);
     }
   });
+
+  // Create the <span> elements for each character
+  for (let i = 0; i < ROWS * COLUMNS; i++) {
+    const element = document.createElement("span");
+
+    element.id = "char" + i;
+    element.dataset.textmode = textMode.name
+    element.dataset.heightmode = heightMode.name;
+
+    outputGrid.value.appendChild(element);
+  }
 });
 </script>
 
 <template>
   <div>
-    <div ref="outputContainer"></div>
+    <div ref="outputGrid" id="outputGrid"></div>
+    <br>
     <button ref="toggleConnectedButton" @click="toggleConnected">Connect</button>
   </div>
 </template>

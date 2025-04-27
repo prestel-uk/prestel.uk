@@ -1,32 +1,38 @@
-.red {
+#outputGrid {
+    display: inline-grid;
+    grid-template-rows: repeat(24, auto);
+    grid-template-columns: repeat(40, auto);
+}
+
+span[data-textmode="alphanumeric-red"], span[data-textmode="mosaics-red"] {
     color: #ff0000;
 }
 
-.green {
+span[data-textmode="alphanumeric-green"], span[data-textmode="mosaics-green"] {
     color: #00ff00;
 }
 
-.yellow {
+span[data-textmode="alphanumeric-yellow"], span[data-textmode="mosaics-yellow"] {
     color: #ffff00;
 }
 
-.blue {
+span[data-textmode="alphanumeric-blue"], span[data-textmode="mosaics-blue"] {
     color: #0000ff;
 }
 
-.magenta {
+span[data-textmode="alphanumeric-magenta"], span[data-textmode="mosaics-magenta"] {
     color: #ff00ff;
 }
 
-.cyan {
+span[data-textmode="alphanumeric-cyan"], span[data-textmode="mosaics-cyan"] {
     color: #00ffff;
 }
 
-.white {
+span[data-textmode="alphanumeric-white"], span[data-textmode="mosaics-white"] {
     color: #ffffff;
 }
 
-.double-height {
+span[data-heightmode="double-height"] {
     display: inline-block;
     transform-origin: top;
     transform: scale(1, 2);
