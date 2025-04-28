@@ -128,6 +128,11 @@ function parseResponse(response) {
   // The current row and column of the "cursor"
   let cursor = [0, 0];
   for (const i in json) {
+    // If the character is NUL, then just ignore it, otherwise that cell of the terminal will be made blank
+    if (json[i] === 0) {
+      continue;
+    }
+
     // The response is received as a JSON array of character codes as numbers which need to have the parity bit removed, then converted into a string
     const withoutParity = json[i] & 0b01111111;
 
