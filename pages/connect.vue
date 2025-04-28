@@ -32,6 +32,7 @@ const controlCodes = {
   "NEW_BACKGROUND": { name: "new-background", char: 0x5D },
   "HOLD_MOSAICS": { char: 0x5E },
   "RELEASE_MOSAICS": { char: 0x5F },
+  "CURSOR_HOME_AND_CLEAR_SCREEN": { char: 0x0C },
 };
 
 // The offset of contiguous mosaics in the font
@@ -132,11 +133,16 @@ function parseResponse(response) {
 
     let charAsString;
 
+    // Special char handling (escape, cursor movement, etc.)
     // Don't try to display escape/control codes
     if (withoutParity === controlCodes.ESCAPE.char) {
       console.log("found escape code");
       nextIsControlCode = true;
       continue;
+    } else if (withoutParity === controlCodes.CURSOR_HOME_AND_CLEAR_SCREEN.char) {
+      cursor = [0, 0];
+      clearTerminal();
+      charAsString = " ";
     } else if (nextIsControlCode) {
       nextIsControlCode = false;
       // Add the correct classes to the next elements
