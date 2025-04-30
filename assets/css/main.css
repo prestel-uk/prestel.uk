@@ -17,7 +17,7 @@ body {
     padding: 40px;
 }
 
-p, span {
+p, a, span {
     font-family: Mode7-3;
     color: white;
 }
