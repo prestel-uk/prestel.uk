@@ -37,3 +37,13 @@ span[data-heightmode="double-height"] {
     transform-origin: top;
     transform: scale(1, 2);
 }
+
+span[data-flashingmode="flashing"] {
+    animation: flash 1s step-start infinite;
+}
+
+@keyframes flash {
+    50% {
+        opacity: 0;
+    }
+}

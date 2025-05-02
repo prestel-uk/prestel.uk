@@ -12,8 +12,8 @@ const controlCodes = {
   "ALPHANUMERIC_MAGENTA": { name: "alphanumeric-magenta", char: 0x45, type: "text" },
   "ALPHANUMERIC_CYAN": { name: "alphanumeric-cyan", char: 0x46, type: "text" },
   "ALPHANUMERIC_WHITE": { name: "alphanumeric-white", char: 0x47, type: "text" },
-  "FLASHING": { name: "flashing", char: 0x48 },
-  "STEADY": { name: "steady", char: 0x49 },
+  "FLASHING": { name: "flashing", char: 0x48, type: "flashing" },
+  "STEADY": { name: "steady", char: 0x49, type: "flashing" },
   "END_EDIT": { char: 0x4A },
   "START_EDIT": { char: 0x4B },
   "NORMAL_HEIGHT": { name: "normal-height", char: 0x4C, type: "height" },
@@ -57,6 +57,7 @@ let ws;
 let textMode = controlCodes.ALPHANUMERIC_WHITE;
 let heightMode = controlCodes.NORMAL_HEIGHT;
 let mosaicsMode = controlCodes.CONTIGUOUS_MOSAICS;
+let flashingMode = controlCodes.STEADY;
 
 // Converts a row and column to an index
 function rowAndColumnToIndex(row, col) {
@@ -158,6 +159,7 @@ function parseResponse(response) {
           case "text": textMode = code; break;
           case "height": heightMode = code; break;
           case "mosaicsMode": mosaicsMode = code; break;
+          case "flashing": flashingMode = code; break;
         }
       } else {
         console.error("Found unknown escape code: 0x" + withoutParity.toString(16));
@@ -170,6 +172,7 @@ function parseResponse(response) {
 
     charSpan.dataset.textmode = textMode.name;
     charSpan.dataset.heightmode = heightMode.name;
+    charSpan.dataset.flashingmode = flashingMode.name;
 
     if (!charAsString) {
       // If the current mode is mosaic, get the mosaic character instead of just converting to a string
@@ -253,6 +256,7 @@ onMounted(() => {
     element.id = "char" + i;
     element.dataset.textmode = textMode.name
     element.dataset.heightmode = heightMode.name;
+    element.dataset.flashingmode = flashingMode.name;
 
     outputGrid.value.appendChild(element);
   }
