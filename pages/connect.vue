@@ -148,7 +148,6 @@ function parseResponse(response) {
     } else if (withoutParity === controlCodes.CURSOR_HOME_AND_CLEAR_SCREEN.char) {
       cursor = [0, 0];
       clearTerminal();
-      continue;
     } else if (nextIsControlCode) {
       nextIsControlCode = false;
       // Add the correct classes to the next elements
