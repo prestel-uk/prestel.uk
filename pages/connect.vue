@@ -32,7 +32,12 @@ const controlCodes = {
   "NEW_BACKGROUND": { name: "new-background", char: 0x5D },
   "HOLD_MOSAICS": { char: 0x5E },
   "RELEASE_MOSAICS": { char: 0x5F },
+  "CURSOR_LEFT": { char: 0x08 },
+  "CURSOR_RIGHT": { char: 0x09 },
+  "CURSOR_DOWN": { char: 0x0A },
+  "CURSOR_UP": { char: 0x0B },
   "CURSOR_HOME_AND_CLEAR_SCREEN": { char: 0x0C },
+  "CURSOR_RETURN": { char: 0x0D },
 };
 
 // The offset of contiguous mosaics in the font
@@ -81,6 +86,7 @@ function getElementPosition(el) {
 
 // Clear the terminal
 function clearTerminal() {
+  onNewLine();
   for (const el of outputGrid.value.children) {
     el.textContent = "";
   }
@@ -139,15 +145,47 @@ function parseResponse(response) {
 
     let charAsString;
 
-    // Special char handling (escape, cursor movement, etc.)
+    console.debug(withoutParity.toString(16) + " at " + rowAndColumnToIndex(cursor[0], cursor[1]));
+
+    // C0 char code handling
+    switch (controlCodes[findCodeByCharCode(withoutParity)]) {
+      case controlCodes.CURSOR_LEFT:
+        console.debug("left");
+        if (cursor[1] !== 0) cursor[1]--;
+        continue;
+      case controlCodes.CURSOR_RIGHT:
+        console.debug("right");
+        if (cursor[1] !== COLUMNS) cursor[1]++;
+        continue;
+      case controlCodes.CURSOR_DOWN:
+        console.debug("down at " + cursor + " (" + i + ")");
+        if (cursor[0] !== ROWS) {
+          //onNewLine();
+          cursor[0]++;
+        }
+        continue;
+      case controlCodes.CURSOR_UP:
+        console.debug("up");
+        if (cursor[0] !== 0) {
+          //onNewLine();
+          cursor[0]--;
+        }
+        continue;
+      case controlCodes.CURSOR_HOME_AND_CLEAR_SCREEN:
+        cursor = [0, 0];
+        clearTerminal();
+        continue;
+      case controlCodes.CURSOR_RETURN:
+        cursor[1] = 0;
+        continue;
+    }
+
+    // Control code handling (escape, mosaics, etc.)
     // Don't try to display escape/control codes
     if (withoutParity === controlCodes.ESCAPE.char) {
       console.log("found escape code");
       nextIsControlCode = true;
       continue;
-    } else if (withoutParity === controlCodes.CURSOR_HOME_AND_CLEAR_SCREEN.char) {
-      cursor = [0, 0];
-      clearTerminal();
     } else if (nextIsControlCode) {
       nextIsControlCode = false;
       // Add the correct classes to the next elements
@@ -263,7 +301,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div>
+  <div class="flex flex-col justify-center items-center">
     <div ref="outputGrid" id="outputGrid"></div>
     <br>
     <button ref="toggleConnectedButton" @click="toggleConnected">Connect</button>
