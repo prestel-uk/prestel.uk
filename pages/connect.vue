@@ -1,44 +1,7 @@
-<script setup>
+<script setup lang="ts">
 import "~/assets/css/terminal.css";
-import { useTemplateRef } from "vue";
-
-// Control codes
-const controlCodes = {
-  "ESCAPE": { char: 0x1B },
-  "ALPHANUMERIC_RED": { name: "alphanumeric-red", char: 0x41, type: "text" },
-  "ALPHANUMERIC_GREEN": { name: "alphanumeric-green", char: 0x42, type: "text" },
-  "ALPHANUMERIC_YELLOW": { name: "alphanumeric-yellow", char: 0x43, type: "text" },
-  "ALPHANUMERIC_BLUE": { name: "alphanumeric-blue", char: 0x44, type: "text" },
-  "ALPHANUMERIC_MAGENTA": { name: "alphanumeric-magenta", char: 0x45, type: "text" },
-  "ALPHANUMERIC_CYAN": { name: "alphanumeric-cyan", char: 0x46, type: "text" },
-  "ALPHANUMERIC_WHITE": { name: "alphanumeric-white", char: 0x47, type: "text" },
-  "FLASHING": { name: "flashing", char: 0x48, type: "flashing" },
-  "STEADY": { name: "steady", char: 0x49, type: "flashing" },
-  "END_EDIT": { char: 0x4A },
-  "START_EDIT": { char: 0x4B },
-  "NORMAL_HEIGHT": { name: "normal-height", char: 0x4C, type: "height" },
-  "DOUBLE_HEIGHT": { name: "double-height", char: 0x4D, type: "height" },
-  "MOSAICS_RED": { name: "mosaics-red", char: 0x51, type: "mosaic" },
-  "MOSAICS_GREEN": { name: "mosaics-green", char: 0x52, type: "mosaic" },
-  "MOSAICS_YELLOW": { name: "mosaics-yellow", char: 0x53, type: "mosaic" },
-  "MOSAICS_BLUE": { name: "mosaics-blue", char: 0x54, type: "mosaic" },
-  "MOSAICS_MAGENTA": { name: "mosaics-magenta", char: 0x55, type: "mosaic" },
-  "MOSAICS_CYAN": { name: "mosaics-cyan", char: 0x56, type: "mosaic" },
-  "MOSAICS_WHITE": { name: "mosaics-white", char: 0x57, type: "mosaic" },
-  "CONCEAL_DISPLAY": { char: 0x58 },
-  "CONTIGUOUS_MOSAICS": { name: "contiguous-mosaics", char: 0x59, type: "mosaicsMode" },
-  "SEPARATED_MOSAICS": { name: "separated-mosaics", char: 0x5A, type: "mosaicsMode" },
-  "BLACK_BACKGROUND": { name: "black-background", char: 0x5C },
-  "NEW_BACKGROUND": { name: "new-background", char: 0x5D },
-  "HOLD_MOSAICS": { char: 0x5E },
-  "RELEASE_MOSAICS": { char: 0x5F },
-  "CURSOR_LEFT": { char: 0x08 },
-  "CURSOR_RIGHT": { char: 0x09 },
-  "CURSOR_DOWN": { char: 0x0A },
-  "CURSOR_UP": { char: 0x0B },
-  "CURSOR_HOME_AND_CLEAR_SCREEN": { char: 0x0C },
-  "CURSOR_RETURN": { char: 0x0D },
-};
+import {useTemplateRef} from "vue";
+import init, {Colour, MosaicType, VTXScreen} from "@prestel-uk/vtxcore";
 
 // The offset of contiguous mosaics in the font
 const CONTIGUOUS_MOSAICS_OFFSET = 57856;
@@ -52,211 +15,98 @@ const BRIDGE_ADDR = "ws://127.0.0.1:1234";
 
 const ROWS = 24;
 const COLUMNS = 40;
+const SCREEN_SIZE = 1024;
 
 const outputGrid = useTemplateRef("outputGrid");
 const toggleConnectedButton = useTemplateRef("toggleConnectedButton");
 
 let connected = false;
-let ws;
-
-let textMode = controlCodes.ALPHANUMERIC_WHITE;
-let heightMode = controlCodes.NORMAL_HEIGHT;
-let mosaicsMode = controlCodes.CONTIGUOUS_MOSAICS;
-let flashingMode = controlCodes.STEADY;
-
-// Converts a row and column to an index
-function rowAndColumnToIndex(row, col) {
-  return row * COLUMNS + col;
-}
-
-// Converts an index to a row and column
-function indexToRowAndColumn(index) {
-  const row = Math.floor(index / COLUMNS);
-  const col = index % COLUMNS;
-
-  return [row, col];
-}
-
-// Gets the row and column of an element in the terminal grid
-function getElementPosition(el) {
-  const index = el.id.split("char")[1];
-
-  return indexToRowAndColumn(index);
-}
+let screen: VTXScreen;
+let ws: WebSocket;
 
 // Clear the terminal
 function clearTerminal() {
-  onNewLine();
-  for (const el of outputGrid.value.children) {
-    el.textContent = "";
-  }
-}
-
-// Find a control code by its char code, returns the key of the code in `controlCodes` if it was found, otherwise returns null
-function findCodeByCharCode(charCode) {
-  for (const [key, value] of Object.entries(controlCodes)) {
-    if (value.char === charCode) {
-      return key;
-    }
-  }
-  return null;
-}
-
-// Run at the end of every line
-function onNewLine() {
-  textMode = controlCodes.ALPHANUMERIC_WHITE;
-  heightMode = controlCodes.NORMAL_HEIGHT;
-  mosaicsMode = controlCodes.CONTIGUOUS_MOSAICS;
+  screen.clear();
+  drawScreen();
 }
 
 // Get a mosaic character using the number sent by the server
-function getMosaicChar(code) {
+function getMosaicChar(character: string, mosaicType: MosaicType) {
+  const code = character.charCodeAt(0);
+
+  console.debug(code);
+
   // The 6th bit is used for something else which I don't understand at the moment, so for now it just gets ignored
   const maskedCode = code & 0b01011111;
-  switch (mosaicsMode) {
-    case controlCodes.CONTIGUOUS_MOSAICS:
+  switch (mosaicType) {
+    case MosaicType.Contiguous:
       return String.fromCodePoint(maskedCode + CONTIGUOUS_MOSAICS_OFFSET);
-    case controlCodes.SEPARATED_MOSAICS:
+    case MosaicType.Separated:
       return String.fromCodePoint(maskedCode + SEPARATED_MOSAICS_OFFSET);
     default:
-      return null;
+      return "";
   }
 }
 
-function parseResponse(response) {
+async function parseResponse(response: Blob) {
+  let data = await new Response(response).text();
+
   // Don't try to parse messages from the bridge
-  if (response.startsWith(BRIDGE_MSG_PREFIX)) {
+  if (data.startsWith(BRIDGE_MSG_PREFIX)) {
     console.log(response);
     return "";
   }
 
-  let json = JSON.parse(response);
-  let nextIsControlCode = false;
-  // The current row and column of the "cursor"
-  let cursor = [0, 0];
-  for (const i in json) {
-    // If the character is NUL, then just ignore it, otherwise that cell of the terminal will be made blank
-    if (json[i] === 0) {
+  screen.parse_string(data);
+  drawScreen();
+}
+
+function drawScreen() {
+  // Keep track of where in the grid we are
+  let idx = 0;
+  for (let c of screen.buffer) {
+    // If the character shouldn't be displayed, do nothing
+    if (c.to_be_displayed === undefined) {
       continue;
-    }
-
-    // The response is received as a JSON array of character codes as numbers which need to have the parity bit removed, then converted into a string
-    const withoutParity = json[i] & 0b01111111;
-
-    let charAsString;
-
-    console.debug(withoutParity.toString(16) + " at " + rowAndColumnToIndex(cursor[0], cursor[1]));
-
-    // C0 char code handling
-    switch (controlCodes[findCodeByCharCode(withoutParity)]) {
-      case controlCodes.CURSOR_LEFT:
-        console.debug("left");
-        if (cursor[1] !== 0) cursor[1]--;
-        continue;
-      case controlCodes.CURSOR_RIGHT:
-        console.debug("right");
-        if (cursor[1] !== COLUMNS) cursor[1]++;
-        continue;
-      case controlCodes.CURSOR_DOWN:
-        console.debug("down at " + cursor + " (" + i + ")");
-        if (cursor[0] !== ROWS) {
-          //onNewLine();
-          cursor[0]++;
-        }
-        continue;
-      case controlCodes.CURSOR_UP:
-        console.debug("up");
-        if (cursor[0] !== 0) {
-          //onNewLine();
-          cursor[0]--;
-        }
-        continue;
-      case controlCodes.CURSOR_HOME_AND_CLEAR_SCREEN:
-        cursor = [0, 0];
-        clearTerminal();
-        continue;
-      case controlCodes.CURSOR_RETURN:
-        cursor[1] = 0;
-        continue;
-    }
-
-    // Control code handling (escape, mosaics, etc.)
-    // Don't try to display escape/control codes
-    if (withoutParity === controlCodes.ESCAPE.char) {
-      console.log("found escape code");
-      nextIsControlCode = true;
-      continue;
-    } else if (nextIsControlCode) {
-      nextIsControlCode = false;
-      // Add the correct classes to the next elements
-      const code = controlCodes[findCodeByCharCode(withoutParity)]
-      if (code) {
-        switch (code.type) {
-          case "mosaic":
-          case "text": textMode = code; break;
-          case "height": heightMode = code; break;
-          case "mosaicsMode": mosaicsMode = code; break;
-          case "flashing": flashingMode = code; break;
-        }
-      } else {
-        console.error("Found unknown escape code: 0x" + withoutParity.toString(16));
-      }
-      charAsString = " ";
     }
 
     // Each character has its own <span> element which is created when the page loads
-    let charSpan = document.getElementById("char" + rowAndColumnToIndex(cursor[0], cursor[1]));
+    let charSpan = document.getElementById("char" + idx);
 
-    charSpan.dataset.textmode = textMode.name;
-    charSpan.dataset.heightmode = heightMode.name;
-    charSpan.dataset.flashingmode = flashingMode.name;
+    let colour = "";
 
-    if (!charAsString) {
-      // If the current mode is mosaic, get the mosaic character instead of just converting to a string
-      if (textMode.type === "mosaic") {
-        charAsString = getMosaicChar(withoutParity);
-        if (!charAsString) {
-          console.error("getMosaicChar returned null\n Current textMode is: " + textMode.char.toString(16));
-        }
-      } else {
-        charAsString = String.fromCharCode(withoutParity);
-      }
+    switch (c.colour) {
+      case Colour.Red: colour = "red"; break;
+      case Colour.Green: colour = "green"; break;
+      case Colour.Yellow: colour = "yellow"; break;
+      case Colour.Blue: colour = "blue"; break;
+      case Colour.Magenta: colour = "magenta"; break;
+      case Colour.Cyan: colour = "cyan"; break;
+      case Colour.White: colour = "white"; break;
     }
 
-    charSpan.innerText = charAsString;
+    let heightMode = "normal-height";
 
-    // Reset formatting at the end of a line
-    if (charAsString === "\n") {
-      onNewLine();
-      // Add one to the current row
-      cursor[0]++;
-      // Set the column to 0
-      cursor[1] = 0;
+    if (c.double_height) {
+      heightMode = "double-height";
     }
 
-    // Update cursor position and wrap if needed
-    if (cursor[1] === COLUMNS) {
-      // Wrap the cursor position
-      // Add one to the current row
-      cursor[0]++;
-      // Set the column to 0
-      cursor[1] = 0;
+    charSpan!.innerText = c.is_mosaic ? getMosaicChar(c.original, c.mosaic_type) : c.to_be_displayed;
+    charSpan!.dataset.colour = colour;
+    charSpan!.dataset.heightmode = heightMode;
 
-      onNewLine();
-    } else {
-      // Add one to the current column
-      cursor[1]++;
-    }
+    idx++;
   }
 }
 
 function connect() {
+  screen = VTXScreen.new(ROWS, COLUMNS, SCREEN_SIZE);
+
   ws = new WebSocket(BRIDGE_ADDR);
   ws.onopen = () => {
-    toggleConnectedButton.value.innerText = "Disconnect";
+    toggleConnectedButton.value!.innerText = "Disconnect";
   }
   ws.onmessage = (event) => {
-    console.log(event.data);
     parseResponse(event.data);
   }
 
@@ -266,7 +116,7 @@ function connect() {
 function disconnect() {
   ws.close();
   clearTerminal();
-  toggleConnectedButton.value.innerText = "Connect";
+  toggleConnectedButton.value!.innerText = "Connect";
   connected = false;
 }
 
@@ -279,6 +129,8 @@ function toggleConnected() {
 }
 
 onMounted(() => {
+  init();
+
   window.addEventListener("keydown", (event) => {
     // We have to check the length of the key, otherwise things like "Enter", and "Shift" get sent too
     if (connected && event.key.length === 1) {
@@ -291,11 +143,8 @@ onMounted(() => {
     const element = document.createElement("span");
 
     element.id = "char" + i;
-    element.dataset.textmode = textMode.name
-    element.dataset.heightmode = heightMode.name;
-    element.dataset.flashingmode = flashingMode.name;
 
-    outputGrid.value.appendChild(element);
+    outputGrid.value!.appendChild(element);
   }
 });
 </script>

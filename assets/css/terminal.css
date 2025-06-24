@@ -4,31 +4,31 @@
     grid-template-columns: repeat(40, 1fr);
 }
 
-span[data-textmode="alphanumeric-red"], span[data-textmode="mosaics-red"] {
+span[data-colour="red"] {
     color: #ff0000;
 }
 
-span[data-textmode="alphanumeric-green"], span[data-textmode="mosaics-green"] {
+span[data-colour="green"] {
     color: #00ff00;
 }
 
-span[data-textmode="alphanumeric-yellow"], span[data-textmode="mosaics-yellow"] {
+span[data-colour="yellow"] {
     color: #ffff00;
 }
 
-span[data-textmode="alphanumeric-blue"], span[data-textmode="mosaics-blue"] {
+span[data-colour="blue"] {
     color: #0000ff;
 }
 
-span[data-textmode="alphanumeric-magenta"], span[data-textmode="mosaics-magenta"] {
+span[data-colour="magenta"] {
     color: #ff00ff;
 }
 
-span[data-textmode="alphanumeric-cyan"], span[data-textmode="mosaics-cyan"] {
+span[data-colour="cyan"] {
     color: #00ffff;
 }
 
-span[data-textmode="alphanumeric-white"], span[data-textmode="mosaics-white"] {
+span[data-colour="white"] {
     color: #ffffff;
 }
 
