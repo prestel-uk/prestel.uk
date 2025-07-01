@@ -91,7 +91,7 @@ function drawScreen() {
       heightMode = "double-height";
     }
 
-    charSpan!.innerText = c.is_mosaic ? getMosaicChar(c.original, c.mosaic_type) : c.to_be_displayed;
+    charSpan!.innerText = c.is_mosaic ? getMosaicChar(c.to_be_displayed, c.mosaic_type) : c.to_be_displayed;
     charSpan!.dataset.colour = colour;
     charSpan!.dataset.heightmode = heightMode;
 
