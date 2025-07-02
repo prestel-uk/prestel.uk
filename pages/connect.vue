@@ -15,7 +15,6 @@ const BRIDGE_ADDR = "ws://127.0.0.1:1234";
 
 const ROWS = 24;
 const COLUMNS = 40;
-const SCREEN_SIZE = 1024;
 
 const outputGrid = useTemplateRef("outputGrid");
 const toggleConnectedButton = useTemplateRef("toggleConnectedButton");
@@ -33,8 +32,6 @@ function clearTerminal() {
 // Get a mosaic character using the number sent by the server
 function getMosaicChar(character: string, mosaicType: MosaicType) {
   const code = character.charCodeAt(0);
-
-  console.debug(code);
 
   // The 6th bit is used for something else which I don't understand at the moment, so for now it just gets ignored
   const maskedCode = code & 0b01011111;
@@ -100,7 +97,7 @@ function drawScreen() {
 }
 
 function connect() {
-  screen = VTXScreen.new(ROWS, COLUMNS, SCREEN_SIZE);
+  screen = VTXScreen.new(ROWS, COLUMNS);
 
   ws = new WebSocket(BRIDGE_ADDR);
   ws.onopen = () => {
