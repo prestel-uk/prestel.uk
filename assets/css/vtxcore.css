@@ -1,0 +1,43 @@
+span[data-vtxcore-colour="red"] {
+    color: #ff0000;
+}
+
+span[data-vtxcore-colour="green"] {
+    color: #00ff00;
+}
+
+span[data-vtxcore-colour="yellow"] {
+    color: #ffff00;
+}
+
+span[data-vtxcore-colour="blue"] {
+    color: #0000ff;
+}
+
+span[data-vtxcore-colour="magenta"] {
+    color: #ff00ff;
+}
+
+span[data-vtxcore-colour="cyan"] {
+    color: #00ffff;
+}
+
+span[data-vtxcore-colour="white"] {
+    color: #ffffff;
+}
+
+span[data-vtxcore-heightmode="double-height"] {
+    display: inline-block;
+    transform-origin: top;
+    transform: scale(1, 2);
+}
+
+span[data-vtxcore-flashingmode="flashing"] {
+    animation: vtx-flash 1s step-start infinite;
+}
+
+@keyframes vtxcore-flash {
+    50% {
+        opacity: 0;
+    }
+}
