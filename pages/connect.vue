@@ -1,12 +1,7 @@
 <script setup lang="ts">
 import "~/assets/css/vtxcore.css";
 import {useTemplateRef} from "vue";
-import init, {VTXScreen} from "@prestel-uk/vtxcore";
-
-// The offset of contiguous mosaics in the font
-const CONTIGUOUS_MOSAICS_OFFSET = 57856;
-// The offset of separated mosaics in the font
-const SEPARATED_MOSAICS_OFFSET = 58048;
+import init, {get_version, VTXScreen} from "@prestel-uk/vtxcore";
 
 // The prefix for messages coming from the bridge and not Genesis
 const BRIDGE_MSG_PREFIX = "[bridge] ";
@@ -75,8 +70,10 @@ function toggleConnected() {
   }
 }
 
-onMounted(() => {
-  init();
+onMounted(async () => {
+  console.log("Loading vtxcore...");
+  await init();
+  console.log("Initialised vtxcore " + get_version());
 
   window.addEventListener("keydown", (event) => {
     // We have to check the length of the key, otherwise things like "Enter", and "Shift" get sent too
